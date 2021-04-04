@@ -9,9 +9,11 @@ warnings.filterwarnings("ignore")
 # df = pd.read_csv('./data.csv')
 df = pd.read_csv('./ecommerce.csv')
 
+t_total = df.shape[0]
+
 split_value = 1000
 
-# dimensions = ['Country', 'Browser', 'Locale', 'Impressions']
+# dimensions = ['Country', 'Browser', 'Locale']
 # aggregations = {'Country':pd.Series.nunique, 'Browser':pd.Series.nunique, 'Locale':pd.Series.nunique, 'Impressions' : 'sum'}
 
 dimensions = ['Country', 'StockCode', 'InvoiceDate']
@@ -20,7 +22,7 @@ aggregations = {'StockCode':['count'], 'Quantity':['sum'], 'Country':pd.Series.n
 def star_node(name, record_count, records, aggregations, parent=None, children=None) :
     return Node(name, record_count = record_count, records = records, aggregations = aggregations, parent = parent)
 
-root_node = star_node('root', len(df.index), df, df.groupby(dimensions).agg(aggregations))
+root = star_node('root', df.shape[0], df, df.groupby(dimensions).agg(aggregations))
 
 def drop_return(df, index):
     row = df.loc[index]
@@ -31,18 +33,28 @@ def drop_return(df, index):
 def recursive(root_node, i) :
     if(root_node.record_count > split_value and i<len(dimensions)) : 
         unique_values = root_node.records[dimensions[i]].value_counts().to_dict()
-        # print(unique_values)
         for k,v in unique_values.items() : 
             if(v > split_value) : 
-                index =root_node.records[root_node.records[dimensions[i]]==k].index
+                index = root_node.records[root_node.records[dimensions[i]]==k].index
                 sub_records = root_node.records.loc[index]
-                # new_root_node_records = root_node.records.drop(index)
-                # root_node = star_node(root_node.name, len(new_root_node_records.index), new_root_node_records, new_root_node_records.groupby(dimensions).agg(aggregations))
-                new_node = star_node(dimensions[i] + "_" + str(k),  len(sub_records.index), sub_records, sub_records.groupby(dimensions[i]).agg(aggregations), parent=root_node)
+                new_node = star_node(dimensions[i] + "_" + str(k),  sub_records.shape[0], sub_records, sub_records.groupby(dimensions[i]).agg(aggregations), parent=root_node)
+                print('Created New Node : ', root_node.name, new_node.name, new_node.record_count, "Dimension : ", dimensions[i])
                 recursive(new_node, i+1)
+                temp_record_count = root_node.records.shape[0]
+                root_node.records = root_node.records.drop(index)
+                root_node.record_count = root_node.records.shape[0]
+        if(i+1<len(dimensions)):
+            recursive(root_node, i+1)
 
-recursive(root_node, 0)
-
-for pre, fill, node in RenderTree(root_node):
+recursive(root, 0)
+root.record_count = root.records.shape[0]
+root.records = root.records
+root.records.aggregations = root.records.groupby(dimensions).agg(aggregations)
+total = 0
+for pre, fill, node in RenderTree(root):
     treestr = u"%s%s" % (pre, node.name)
-    print(treestr, "Records:", node.record_count)
+    total += node.record_count
+    print(treestr, "Records:", node.record_count, "Total : ", total)
+    
+print("TOTAL : ", t_total)
+print("ACTUAL : ", total)

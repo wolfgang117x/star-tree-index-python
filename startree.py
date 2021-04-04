@@ -4,9 +4,9 @@ from pprint import pprint
 from collections import namedtuple  
 import warnings
 warnings.filterwarnings("ignore")
-df = pd.read_csv('./KAG_conversion_data.csv')
+df = pd.read_csv('./ecommerce.csv')
 
-split_value = 100
+split_value = 1000
 
 agg_dict = {}
 
@@ -14,24 +14,24 @@ agg_dict = {}
 # aggregate = ['Impressions']
 # aggregations = ['sum', 'min', 'max', 'mean']
 
-# true_dimensions = ['StockCode', 'InvoiceDate', 'Country']
-# aggregate = ['StockCode', 'CustomerID', 'Quantity', 'Country']
-# aggregations = ['count']
+true_dimensions = ['StockCode', 'InvoiceDate', 'Country']
+aggregate = ['StockCode', 'CustomerID', 'Quantity', 'Country']
+aggregations = ['count']
 
-# agg_dict = {'StockCode':['count'], 'Quantity':['sum'], 'Country':pd.Series.nunique, 'UnitPrice':['sum']}
+agg_dict = {'StockCode':['count'], 'Quantity':['sum'], 'Country':pd.Series.nunique, 'UnitPrice':['sum']}
 
-true_dimensions = ['xyz_campaign_id', 'fb_campaign_id', 'age', 'gender', 'interest']
-aggregate = ['Impressions', 'Clicks', 'Spent', 'Total_Conversion', 'Approved_Conversion']
-aggregations = ['sum', 'min', 'max', 'mean']
+# true_dimensions = ['xyz_campaign_id', 'fb_campaign_id', 'age', 'gender', 'interest']
+# aggregate = ['Impressions', 'Clicks', 'Spent', 'Total_Conversion', 'Approved_Conversion']
+# aggregations = ['sum', 'min', 'max', 'mean']
 
 temp_dict = {}
 for d in true_dimensions : 
     unique_counts = len(df[d].unique())
     temp_dict[d] = unique_counts
 true_dimensions = sorted(temp_dict, key=temp_dict.get)
-for agg in aggregate:
-    agg_dict[agg] = aggregations
-print(agg_dict)
+# for agg in aggregate:
+#     agg_dict[agg] = aggregations
+# print(agg_dict)
 print(true_dimensions)
 
 global star_tree
@@ -60,7 +60,7 @@ index(true_dimensions, df)
 star_tree.columns = ["_".join(x) for x in star_tree.columns.ravel()]
 star_tree = star_tree.drop_duplicates(subset=[x+"_" for x in true_dimensions], keep='last')
 print("Finished building index!")
-pprint(star_tree)
+print(star_tree)
 star_tree.to_csv('./star_tree.csv')
 print("Finished writing to csv")
 
